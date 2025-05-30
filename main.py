@@ -1,21 +1,18 @@
-import cv2  # For camera module
-import mediapipe as mp  # For hand movement, ML framework
-import pyautogui  # For accessing the keyboard and mouse
-import time  # For managing time between clicks
 
-# Initializing MediaPipe Hand module
+import cv2  
+import mediapipe as mp 
+import pyautogui  
+import time 
+
 mp_hands = mp.solutions.hands
 mp_drawing = mp.solutions.drawing_utils
 hands = mp_hands.Hands(min_detection_confidence=0.7, min_tracking_confidence=0.7)
 
-# Define constants for screen width and height
 SCREEN_WIDTH, SCREEN_HEIGHT = pyautogui.size()
 
-# Parameters for smoothing and debouncing
 SMOOTHING_FACTOR = 0.2
 DEBOUNCE_TIME = 0.2  # Time to wait to prevent multiple clicks
 
-# For smoothing
 previous_x, previous_y = 0, 0
 last_action_time = 0
 
@@ -37,7 +34,7 @@ def are_fingers_up(landmarks):
         fingers.append(0)
 
     # 4 Fingers
-    for id in range(8, 21, 4):  # Iterating loop for four fingers with a step of 4
+    for id in range(8, 21, 4):  
         if landmarks[id].y < landmarks[id - 2].y:
             fingers.append(1)
         else:
@@ -61,18 +58,14 @@ def main():
 
         if results.multi_hand_landmarks:
             for hand_landmarks in results.multi_hand_landmarks:
-                # Draw landmarks and connections
                 mp_drawing.draw_landmarks(frame, hand_landmarks, mp_hands.HAND_CONNECTIONS)
 
-                # Get the finger states
                 fingers = are_fingers_up(hand_landmarks.landmark)
                 
-                # Check for "Hang Loose" gesture (thumb and pinky extended)
-                if fingers == [1, 0, 0, 0, 1]:  # Thumb and pinky up, others down
+                if fingers == [1, 0, 0, 0, 1]: 
                     print("Exiting... 'Hang Loose' gesture detected.")
-                    break  # Exit the loop to quit the program
-
-                # Get the position of the index finger tip
+                    break  
+                
                 index_finger_tip = hand_landmarks.landmark[8]
                 index_x = int(index_finger_tip.x * SCREEN_WIDTH)
                 index_y = int(index_finger_tip.y * SCREEN_HEIGHT)
@@ -81,25 +74,25 @@ def main():
                 smoothed_x, smoothed_y = smooth_movement(index_x, index_y)
 
                 # Navigation
-                if fingers == [0, 1, 0, 0, 0]:  # For one finger up
+                if fingers == [0, 1, 0, 0, 0]:  
                     pyautogui.moveTo(smoothed_x, smoothed_y)
 
                 # Scroll Up
-                elif fingers == [0, 1, 1, 0, 0]:  # For two fingers up
+                elif fingers == [0, 1, 1, 0, 0]:  
                     current_time = time.time()
                     if (current_time - last_action_time) > DEBOUNCE_TIME:
                         pyautogui.scroll(100)
                         last_action_time = current_time
 
                 # Scroll Down (Fist)
-                elif fingers == [0, 0, 0, 0, 0]:  # No fingers up (fist)
+                elif fingers == [0, 0, 0, 0, 0]: 
                     current_time = time.time()
                     if (current_time - last_action_time) > DEBOUNCE_TIME:
                         pyautogui.scroll(-100)
                         last_action_time = current_time
 
                 # Click
-                elif fingers == [1, 1, 1, 1, 1]:  # Click when all fingers are extended
+                elif fingers == [1, 1, 1, 1, 1]:  
                     current_time = time.time()
                     if (current_time - last_action_time) > DEBOUNCE_TIME:
                         pyautogui.click()
@@ -107,13 +100,13 @@ def main():
                         cv2.putText(frame, 'Clicked!', (smoothed_x - 50, smoothed_y - 50), 
                                     cv2.FONT_HERSHEY_SIMPLEX, 1, (0, 255, 0), 2, cv2.LINE_AA)
 
-        # Display the frame with hand landmarks
+       
         cv2.imshow('Virtual Mouse', frame)
 
-        if cv2.waitKey(1) & 0xFF == ord('q'):  # To exit press 'q'
+        if cv2.waitKey(1) & 0xFF == ord('q'): 
             break
 
-    cap.release()  # Close webcam
+    cap.release() 
     cv2.destroyAllWindows()
 
 if __name__ == "__main__":
